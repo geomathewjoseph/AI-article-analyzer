@@ -1,0 +1,100 @@
+from textblob import TextBlob
+from newspaper import Article
+import nltk
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import Tk, Label, Entry, Button, Text, Scrollbar, messagebox
+
+# Ensure NLTK data is downloaded
+nltk.download('punkt')
+
+def analyze_sentiment(url):
+    # Download and parse the article
+    article = Article(url)
+    article.download()
+    article.parse()
+
+    article.nlp()
+
+    text = article.text
+
+    blob = TextBlob(text)
+    sentiment = blob.sentiment.polarity  # -1 to 1
+
+    # Define sentiment_label before the conditional statement
+    sentiment_label = ""
+
+    # Define the range for neutral sentiment
+    neutral_range = (sentiment > -0.1) and (sentiment < 0.1)
+
+    # Add a colorful sentiment label
+    if sentiment > 0:
+        sentiment_label = "Positive"  # Green
+    elif sentiment < 0:
+        sentiment_label = "Negative"  # Red
+    elif neutral_range:
+        sentiment_label = "Neutral"   # Gray
+
+    # Create a Tkinter window
+    root = Tk()
+    root.title("Sentiment Analysis Result")
+    root.geometry("1000x600")  # Set window size
+
+    # Display the summary and sentiment in the GUI window with smaller font
+    summary_label = Label(root, text=f"Summary", font=("Arial", 14))
+    summary_label.pack(pady=10)
+
+    # Use a Text widget for a neat layout of the summary contents
+    summary_text = Text(root, wrap="word", width=80, height=10, font=("Arial", 10))
+    summary_text.insert("1.0", f"{article.summary}")
+    summary_text.pack(pady=10)
+
+    # Visualize sentiment using a larger bar chart with sentiment score
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=80)
+    bars = ax.bar([sentiment_label], [sentiment], color=['green' if sentiment > 0 else 'red' if sentiment < 0 else 'gray'])
+    ax.text(sentiment_label, sentiment, f'Score: {sentiment:.2f}', ha='center', va='bottom', fontsize=14)
+    ax.set_xlabel('Sentiment', fontsize=14)
+    ax.set_ylabel('Sentiment Polarity', fontsize=14)
+    ax.set_title('Sentiment Analysis of the Article', fontsize=16)
+
+    # Move legend to a more suitable location (top right)
+    ax.legend(bars, [f'{sentiment_label} - Score: {sentiment:.2f}'], loc='upper right', bbox_to_anchor=(1, 1))
+
+    # Embed the matplotlib figure in the Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(pady=10)
+
+    # Display author information on the bottom right in golden color
+    author_label = Label(root, text="Designed by GEO MATHEW JOSEPH", font=("Arial", 10), fg="goldenrod")
+    author_label.pack(side="bottom", anchor="se", padx=10, pady=10)
+
+    canvas.draw()
+
+    # Run the Tkinter event loop
+    root.mainloop()
+
+# Function to handle button click event
+def analyze_button_click():
+    url = url_entry.get()
+    if not url:
+        messagebox.showwarning("Warning", "Please enter a valid URL.")
+        return
+    analyze_sentiment(url)
+
+# GUI setup
+root = Tk()
+root.title("Sentiment Analysis Tool")
+
+# Create and place widgets
+label = Label(root, text="Enter the URL of the article:", font=("Arial", 12))
+label.pack(pady=10)
+
+url_entry = Entry(root, width=50, font=("Arial", 12))
+url_entry.pack(pady=10)
+
+analyze_button = Button(root, text="Analyze Sentiment", command=analyze_button_click, font=("Arial", 12), bg="skyblue", fg="white")
+analyze_button.pack(pady=10)
+
+# Run the GUI
+root.mainloop()
